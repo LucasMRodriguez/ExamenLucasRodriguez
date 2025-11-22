@@ -1,6 +1,7 @@
 import pandas as pd
 import csv
 import os
+import time
 
 NOMBRE_CSV = 'notas_alumnos.csv'
 
@@ -10,18 +11,30 @@ def crear_csv_si_no_existe():
         with open(NOMBRE_CSV, 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow(['Nombre', 'Asignatura'])
-
-
+            
 def registrar_alumno():
+
     print("*"*69," REGISTRAR NUEVO ALUMNO ","*"*70)
     nombre = input("Ingrese el nombre del alumno: ").strip().title()
     asignatura = input("Ingrese el nombre de la asignatura: ").strip().title()
 
     try:
-        with open(NOMBRE_CSV, 'a', newline='') as file:
+        try:
+            df = pd.read_csv(NOMBRE_CSV)
+
+            if nombre in df['Nombre'].values:
+                print(f"\nError: El alumno '{nombre}' ya se encuentra registrado. No se agregó.")
+                return
+        
+        except:
+            pass
+
+        with open(NOMBRE_CSV, 'a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow([nombre, asignatura])
+        
         print(f"\n¡Alumno {nombre} registrado exitosamente!")
+        
     except Exception as e:
         print(f"Ocurrió un error al guardar los datos: {e}")
 
@@ -97,6 +110,38 @@ def ingresar_notas():
     print(f"\nNotas y ponderación guardadas para {nombre_buscar}. Promedio: {promedio_ponderado:.1f}")
 
 
+def eliminar_alumno():
+    print("*"*67," ELIMINAR REGISTRO DE ALUMNO ","*"*67)
+    try:
+        df = pd.read_csv(NOMBRE_CSV)
+        if df.empty:
+            print("No hay alumnos registrados para eliminar.")
+            return
+    except FileNotFoundError:
+        print(f"El archivo {NOMBRE_CSV} no existe.")
+        return
+
+    print("\nAlumnos registrados:")
+    print(df['Nombre'].tolist())
+    
+    nombre_buscar = input("\nIngrese el nombre exacto del alumno a ELIMINAR: ").strip().title()
+    
+    indice_a_eliminar = df[df['Nombre'] == nombre_buscar].index
+    
+    if indice_a_eliminar.empty:
+        print(f"Error: El alumno '{nombre_buscar}' no fue encontrado.")
+        return
+
+    confirmacion = input(f"¿Está seguro de eliminar a '{nombre_buscar}' y todos sus datos? (S/N): ").upper()
+    
+    if confirmacion == 'S' or confirmacion == 'SI':
+        df_actualizado = df.drop(indice_a_eliminar)
+        
+        df_actualizado.to_csv(NOMBRE_CSV, index=False)
+        print(f"\n¡Alumno '{nombre_buscar}' eliminado exitosamente del sistema!")
+    else:
+        print(f"Eliminación de '{nombre_buscar}' cancelada.")
+
 
 def buscar_alumno_por_nombre(df):
     print("\nAlumnos registrados:")
@@ -136,6 +181,85 @@ def buscar_alumno_por_nombre(df):
     print(f"ESTADO: {estado}")
     print ("="*85)
 
+
+def editar_notas_alumno():
+
+    print("*"*65," EDITAR NOTAS DEL ALUMNO ","*"*65)
+    try:
+        df = pd.read_csv(NOMBRE_CSV)
+        if df.empty:
+            print("No hay alumnos registrados.")
+            return
+    except FileNotFoundError:
+        print(f"El archivo {NOMBRE_CSV} no existe.")
+        return
+
+    print("\nAlumnos registrados:")
+    print(df['Nombre'].tolist())
+    
+    nombre_buscar = input("\nIngrese el nombre exacto del alumno para editar notas: ").strip().title()
+    
+    if nombre_buscar not in df['Nombre'].values:
+        print(f"Error: El alumno '{nombre_buscar}' no fue encontrado.")
+        return
+
+    indice_alumno = df[df['Nombre'] == nombre_buscar].index[0]
+    notas_existentes = [col for col in df.columns if col.startswith('Nota_') and pd.notna(df.loc[indice_alumno, col])]
+    
+    if not notas_existentes:
+        print(f"El alumno '{nombre_buscar}' existe, pero aún no tiene notas ingresadas.")
+        return
+    
+    print(f"\nNotas existentes para {nombre_buscar}:")
+    for i, col_nota in enumerate(notas_existentes):
+        col_peso = col_nota.replace('Nota_', 'Peso_')
+        nota_actual = df.loc[indice_alumno, col_nota]
+        peso_actual = df.loc[indice_alumno, col_peso] * 100
+        print(f"{i+1}. {col_nota}: {nota_actual:.1f} (Peso: {peso_actual:.0f}%)")
+
+    while True:
+        try:
+            seleccion = int(input("\nIngrese el número de la nota que desea editar: "))
+            if 1 <= seleccion <= len(notas_existentes):
+                columna_a_editar = notas_existentes[seleccion - 1]
+                break
+            else:
+                print("Número de nota no válido.")
+        except ValueError:
+            print("Entrada inválida. Ingrese un número.")
+
+    while True:
+        try:
+            nueva_nota = float(input(f"Ingrese el nuevo valor para {columna_a_editar} (1.0 a 7.0): "))
+            if 1.0 <= nueva_nota <= 7.0:
+                break
+            else:
+                print("Error: La nota debe estar entre 1.0 y 7.0.")
+        except ValueError:
+            print("Error: Entrada inválida. Ingrese un número.")
+            
+    df.loc[indice_alumno, columna_a_editar] = nueva_nota
+    
+
+    notas_finales = []
+    pesos_finales = []
+    
+    for col in df.columns:
+        if col.startswith('Nota_') and pd.notna(df.loc[indice_alumno, col]):
+            peso_col = col.replace('Nota_', 'Peso_')
+            
+            notas_finales.append(df.loc[indice_alumno, col])
+            pesos_finales.append(df.loc[indice_alumno, peso_col])
+            
+    nuevo_promedio = sum(n * p for n, p in zip(notas_finales, pesos_finales))
+    
+    df.loc[indice_alumno, 'Promedio_Final'] = nuevo_promedio
+    
+    df.to_csv(NOMBRE_CSV, index=False)
+    print(f"\n¡{columna_a_editar} actualizada para {nombre_buscar}!")
+    print(f"El nuevo promedio final es: {nuevo_promedio:.1f}")
+
+
 def calificaciones_generales(df):
     print("")
     print("="*20,"--- REPORTE DE CALIFICACIONES GENERALES ---","="*20)
@@ -172,6 +296,7 @@ def calificaciones_generales(df):
         print(aprobados[['Nombre', 'Promedio_Final']].sort_values(by='Promedio_Final', ascending=False))
     print("")
     print("="*85)
+
 
 def gestion_reportes():
     try:
@@ -213,11 +338,13 @@ def main():
             print ("-"*5,"Opcion 1. Ingreso de Alumnos"," "*124,"-"*5)
             print ("-"*5,"Opcion 2. Ingreso de Notas"," "*126,"-"*5)
             print ("-"*5,"Opcion 3. Busqueda por Nombre o Calificaciones en general (Aprobado/Desaprobado)"," "*72,"-"*5)
-            print ("-"*5,"Opcion 4. Salir del programa"," "*124,"-"*5)
+            print ("-"*5,"Opcion 4. Editar Nota Alumno"," "*124,"-"*5)
+            print ("-"*5,"Opcion 5. Eliminar Alumno"," "*127,"-"*5)
+            print ("-"*5,"Opcion 6. Salir del programa"," "*124,"-"*5)
             print ("-"*165)
             print("")
             
-            r = int(input("Ingrese una opcion (1, 2, 3 o 4): "))
+            r = int(input("Ingrese una opcion (1, 2, 3 ,4, 5 o 6): "))
             print("")
 
             if r==1:
@@ -230,12 +357,18 @@ def main():
                 gestion_reportes()
 
             elif r == 4:
+                editar_notas_alumno()
+            
+            elif r == 5:
+                eliminar_alumno()
+            
+            elif r == 6:
                 print ("Saliendo del programa...")
+                time.sleep(1.5)
                 break; 
 
-
             else:
-                print("!Ingresa una opcion válida (1, 2, 3 o 4)¡");
+                print("!Ingresa una opcion válida (1, 2, 3, etc.)¡");
     
     except:
         print("Error: !Ingresa una opcion valida¡")
