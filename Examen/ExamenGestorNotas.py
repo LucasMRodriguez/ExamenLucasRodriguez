@@ -3,6 +3,15 @@ import csv
 import os
 
 NOMBRE_CSV = 'notas_alumnos.csv'
+
+def crear_csv_si_no_existe():
+    if not os.path.exists(NOMBRE_CSV):
+        print(f"Creando el archivo inicial: {NOMBRE_CSV}")
+        with open(NOMBRE_CSV, 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Nombre', 'Asignatura'])
+
+
 def registrar_alumno():
     print("*"*69," REGISTRAR NUEVO ALUMNO ","*"*70)
     nombre = input("Ingrese el nombre del alumno: ").strip().title()
@@ -194,6 +203,7 @@ def gestion_reportes():
 
 
 def main():    
+    crear_csv_si_no_existe()
     try:
         while True:
             print("")
