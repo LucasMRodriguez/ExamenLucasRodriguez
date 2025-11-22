@@ -70,8 +70,9 @@ def ingresar_notas():
                 print("Error: Entrada inválida. Ingrese números.")
     
     if sum(ponderaciones) != 100:
-        print(f"\nAdvertencia: La suma de las ponderaciones es {sum(ponderaciones)}%. El promedio se calculará con esa base.")
-
+        print(f"\nAdvertencia: La suma de las ponderaciones es {sum(ponderaciones)}%. Debe ser de 100%")
+        return
+    
     pesos = [p / 100 for p in ponderaciones]
     
     notas_lista = list(notas_dict.values())
@@ -84,7 +85,8 @@ def ingresar_notas():
     df.loc[df['Nombre'] == nombre_buscar, 'Promedio_Final'] = promedio_ponderado
 
     df.to_csv(NOMBRE_CSV, index=False)
-    print(f"\nNotas y ponderación guardadas para {nombre_buscar}. Promedio: {promedio_ponderado:.2f}")
+    print(f"\nNotas y ponderación guardadas para {nombre_buscar}. Promedio: {promedio_ponderado:.1f}")
+
 
 
 def buscar_alumno_por_nombre(df):
@@ -95,12 +97,17 @@ def buscar_alumno_por_nombre(df):
     resultado = df[df['Nombre'] == nombre_buscar]
     
     if resultado.empty:
-        print(f"Alumno '{nombre_buscar}' no encontrado o no tiene datos de notas.")
+        print(f"El alumno '{nombre_buscar}' no existe.")
         return
     
+    promedio = resultado['Promedio_Final'].iloc[0]
+    if pd.isna(promedio):
+        print(f"Alumno '{nombre_buscar}' existe, pero aún NO tiene notas ni promedio final calculado.")
+        return 
+
+
     print("")
-    print("="*100)
-    print("")
+    print ("="*85)
     print(f"- DETALLE DE NOTAS PARA {nombre_buscar.upper()}")
     notas_cols = [col for col in resultado.columns if col.startswith('Nota_')]
     pesos_cols = [col for col in resultado.columns if col.startswith('Peso_')]
@@ -111,18 +118,17 @@ def buscar_alumno_por_nombre(df):
         peso = resultado[pesos_cols[i]].iloc[0] * 100 
         
         if pd.notna(nota):
-            print(f"  > {notas_cols[i]}: {nota:.2f} (Ponderación: {peso:.0f}%)")
+            print(f"  > {notas_cols[i]}: {nota:.1f} (Ponderación: {peso:.0f}%)")
     
     promedio = resultado['Promedio_Final'].iloc[0]
     estado = "APROBADO" if promedio >= 4.0 else "REPROBADO"
     
-    print(f"\nPROMEDIO FINAL: {promedio:.2f}")
+    print(f"\nPROMEDIO FINAL: {promedio:.1f}")
     print(f"ESTADO: {estado}")
-    print("")
-    print("="*100)
-
+    print ("="*85)
 
 def calificaciones_generales(df):
+    print("")
     print("="*20,"--- REPORTE DE CALIFICACIONES GENERALES ---","="*20)
     
     df_reporte = df.dropna(subset=['Promedio_Final']).copy()
@@ -132,7 +138,7 @@ def calificaciones_generales(df):
         return
 
     promedio_general = df_reporte['Promedio_Final'].mean()
-    print(f"Promedio General del Curso: {promedio_general:.2f}")
+    print(f"Promedio General del Curso: {promedio_general:.1f}")
 
     umbral = 4.0
     df_reporte['Estado'] = df_reporte['Promedio_Final'].apply(lambda x: 'APROBADO' if x >= umbral else 'REPROBADO')
@@ -142,17 +148,49 @@ def calificaciones_generales(df):
     print("\n--- Resumen por Estado ---")
     print(conteo_estado)
 
+
     reprobados = df_reporte[df_reporte['Estado'] == 'REPROBADO']
     if not reprobados.empty:
+        print("="*85)
         print("\nDetalle de Reprobados:")
         print(reprobados[['Nombre', 'Promedio_Final']].sort_values(by='Promedio_Final'))
     
     aprobados = df_reporte[df_reporte['Estado'] == 'APROBADO']
     if not aprobados.empty:
+        print("")
+        print("="*85)
         print("\nDetalle de Aprobados:")
         print(aprobados[['Nombre', 'Promedio_Final']].sort_values(by='Promedio_Final', ascending=False))
     print("")
     print("="*85)
+
+def gestion_reportes():
+    try:
+        df = pd.read_csv(NOMBRE_CSV)
+    except FileNotFoundError:
+        print(f"El archivo {NOMBRE_CSV} no existe o no hay datos para generar reportes.")
+        return
+
+    while True:
+        print("")
+        print("*"*50,"--- GENERAR REPORTE ---","*"*50)
+        print("1. Búsqueda por Nombre de Alumno")
+        print("2. Calificaciones Generales (Aprobado/Reprobado)")
+        print("3. Volver al Menú Principal")
+        print ("*"*125)
+        opcion_reporte = input("Seleccione una opción de reporte: ")
+
+        if opcion_reporte == '1':
+            buscar_alumno_por_nombre(df)
+
+        elif opcion_reporte == '2':
+            calificaciones_generales(df)
+        
+        elif opcion_reporte == '3':
+            break
+
+        else:
+            print("Opción no válida. Intente de nuevo.")
 
 
 def main():    
@@ -164,7 +202,7 @@ def main():
             print ("-"*165)
             print ("-"*5,"Opcion 1. Ingreso de Alumnos"," "*124,"-"*5)
             print ("-"*5,"Opcion 2. Ingreso de Notas"," "*126,"-"*5)
-            print ("-"*5,"Opcion 3. Busqueda por Nombre o Calificaciones en general (Aprobado/Desaprobado)"," "*73,"-"*5)
+            print ("-"*5,"Opcion 3. Busqueda por Nombre o Calificaciones en general (Aprobado/Desaprobado)"," "*72,"-"*5)
             print ("-"*5,"Opcion 4. Salir del programa"," "*124,"-"*5)
             print ("-"*165)
             print("")
@@ -179,7 +217,7 @@ def main():
                 ingresar_notas()
 
             elif r == 3:
-                print("")
+                gestion_reportes()
 
             elif r == 4:
                 print ("Saliendo del programa...")
