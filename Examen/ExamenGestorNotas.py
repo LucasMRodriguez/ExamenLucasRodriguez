@@ -99,6 +99,8 @@ def buscar_alumno_por_nombre(df):
         return
     
     print("")
+    print("="*100)
+    print("")
     print(f"- DETALLE DE NOTAS PARA {nombre_buscar.upper()}")
     notas_cols = [col for col in resultado.columns if col.startswith('Nota_')]
     pesos_cols = [col for col in resultado.columns if col.startswith('Peso_')]
@@ -116,6 +118,41 @@ def buscar_alumno_por_nombre(df):
     
     print(f"\nPROMEDIO FINAL: {promedio:.2f}")
     print(f"ESTADO: {estado}")
+    print("")
+    print("="*100)
+
+
+def calificaciones_generales(df):
+    print("="*20,"--- REPORTE DE CALIFICACIONES GENERALES ---","="*20)
+    
+    df_reporte = df.dropna(subset=['Promedio_Final']).copy()
+
+    if df_reporte.empty:
+        print("No hay promedios finales calculados para generar el reporte.")
+        return
+
+    promedio_general = df_reporte['Promedio_Final'].mean()
+    print(f"Promedio General del Curso: {promedio_general:.2f}")
+
+    umbral = 4.0
+    df_reporte['Estado'] = df_reporte['Promedio_Final'].apply(lambda x: 'APROBADO' if x >= umbral else 'REPROBADO')
+
+    conteo_estado = df_reporte['Estado'].value_counts()
+    
+    print("\n--- Resumen por Estado ---")
+    print(conteo_estado)
+
+    reprobados = df_reporte[df_reporte['Estado'] == 'REPROBADO']
+    if not reprobados.empty:
+        print("\nDetalle de Reprobados:")
+        print(reprobados[['Nombre', 'Promedio_Final']].sort_values(by='Promedio_Final'))
+    
+    aprobados = df_reporte[df_reporte['Estado'] == 'APROBADO']
+    if not aprobados.empty:
+        print("\nDetalle de Aprobados:")
+        print(aprobados[['Nombre', 'Promedio_Final']].sort_values(by='Promedio_Final', ascending=False))
+    print("")
+    print("="*85)
 
 
 def main():    
@@ -142,8 +179,7 @@ def main():
                 ingresar_notas()
 
             elif r == 3:
-                print ("!Busqueda por Nombre o Calificaciones en general (Aprobado/Desaprobado)¡")
-
+                print("")
 
             elif r == 4:
                 print ("Saliendo del programa...")
