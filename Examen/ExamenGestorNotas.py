@@ -16,6 +16,7 @@ def registrar_alumno():
     except Exception as e:
         print(f"Ocurrió un error al guardar los datos: {e}")
 
+
 def ingresar_notas():
     print("*"*65," INGRESO DE NOTAS Y PONDERACIONES ","*"*64)
     try:
@@ -85,6 +86,38 @@ def ingresar_notas():
     df.to_csv(NOMBRE_CSV, index=False)
     print(f"\nNotas y ponderación guardadas para {nombre_buscar}. Promedio: {promedio_ponderado:.2f}")
 
+
+def buscar_alumno_por_nombre(df):
+    print("\nAlumnos registrados:")
+    print(df['Nombre'].tolist())
+    nombre_buscar = input("\nIngrese el nombre exacto del alumno a buscar: ").strip().title()
+    
+    resultado = df[df['Nombre'] == nombre_buscar]
+    
+    if resultado.empty:
+        print(f"Alumno '{nombre_buscar}' no encontrado o no tiene datos de notas.")
+        return
+    
+    print("")
+    print(f"- DETALLE DE NOTAS PARA {nombre_buscar.upper()}")
+    notas_cols = [col for col in resultado.columns if col.startswith('Nota_')]
+    pesos_cols = [col for col in resultado.columns if col.startswith('Peso_')]
+    
+    print(f"Asignatura: {resultado['Asignatura'].iloc[0]}")
+    for i in range(len(notas_cols)):
+        nota = resultado[notas_cols[i]].iloc[0]
+        peso = resultado[pesos_cols[i]].iloc[0] * 100 
+        
+        if pd.notna(nota):
+            print(f"  > {notas_cols[i]}: {nota:.2f} (Ponderación: {peso:.0f}%)")
+    
+    promedio = resultado['Promedio_Final'].iloc[0]
+    estado = "APROBADO" if promedio >= 4.0 else "REPROBADO"
+    
+    print(f"\nPROMEDIO FINAL: {promedio:.2f}")
+    print(f"ESTADO: {estado}")
+
+
 def main():    
     try:
         while True:
@@ -94,7 +127,7 @@ def main():
             print ("-"*165)
             print ("-"*5,"Opcion 1. Ingreso de Alumnos"," "*124,"-"*5)
             print ("-"*5,"Opcion 2. Ingreso de Notas"," "*126,"-"*5)
-            print ("-"*5,"Opcion 3. Busqueda por Nombre o Califiaciones en general (Aprobado/Desaprobado)"," "*73,"-"*5)
+            print ("-"*5,"Opcion 3. Busqueda por Nombre o Calificaciones en general (Aprobado/Desaprobado)"," "*73,"-"*5)
             print ("-"*5,"Opcion 4. Salir del programa"," "*124,"-"*5)
             print ("-"*165)
             print("")
@@ -109,7 +142,7 @@ def main():
                 ingresar_notas()
 
             elif r == 3:
-                print ("!Busqueda por Nombre o Califiaciones en general (Aprobado/Desaprobado)¡")
+                print ("!Busqueda por Nombre o Calificaciones en general (Aprobado/Desaprobado)¡")
 
 
             elif r == 4:
