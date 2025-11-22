@@ -97,6 +97,38 @@ def ingresar_notas():
     print(f"\nNotas y ponderación guardadas para {nombre_buscar}. Promedio: {promedio_ponderado:.1f}")
 
 
+def eliminar_alumno():
+    print("*"*67," ELIMINAR REGISTRO DE ALUMNO ","*"*67)
+    try:
+        df = pd.read_csv(NOMBRE_CSV)
+        if df.empty:
+            print("No hay alumnos registrados para eliminar.")
+            return
+    except FileNotFoundError:
+        print(f"El archivo {NOMBRE_CSV} no existe.")
+        return
+
+    print("\nAlumnos registrados:")
+    print(df['Nombre'].tolist())
+    
+    nombre_buscar = input("\nIngrese el nombre exacto del alumno a ELIMINAR: ").strip().title()
+    
+    indice_a_eliminar = df[df['Nombre'] == nombre_buscar].index
+    
+    if indice_a_eliminar.empty:
+        print(f"Error: El alumno '{nombre_buscar}' no fue encontrado.")
+        return
+
+    confirmacion = input(f"¿Está seguro de eliminar a '{nombre_buscar}' y todos sus datos? (S/N): ").upper()
+    
+    if confirmacion == 'S' or confirmacion == 'SI':
+        df_actualizado = df.drop(indice_a_eliminar)
+        
+        df_actualizado.to_csv(NOMBRE_CSV, index=False)
+        print(f"\n¡Alumno '{nombre_buscar}' eliminado exitosamente del sistema!")
+    else:
+        print(f"Eliminación de '{nombre_buscar}' cancelada.")
+
 
 def buscar_alumno_por_nombre(df):
     print("\nAlumnos registrados:")
@@ -136,6 +168,7 @@ def buscar_alumno_por_nombre(df):
     print(f"ESTADO: {estado}")
     print ("="*85)
 
+
 def calificaciones_generales(df):
     print("")
     print("="*20,"--- REPORTE DE CALIFICACIONES GENERALES ---","="*20)
@@ -172,6 +205,7 @@ def calificaciones_generales(df):
         print(aprobados[['Nombre', 'Promedio_Final']].sort_values(by='Promedio_Final', ascending=False))
     print("")
     print("="*85)
+
 
 def gestion_reportes():
     try:
@@ -213,7 +247,8 @@ def main():
             print ("-"*5,"Opcion 1. Ingreso de Alumnos"," "*124,"-"*5)
             print ("-"*5,"Opcion 2. Ingreso de Notas"," "*126,"-"*5)
             print ("-"*5,"Opcion 3. Busqueda por Nombre o Calificaciones en general (Aprobado/Desaprobado)"," "*72,"-"*5)
-            print ("-"*5,"Opcion 4. Salir del programa"," "*124,"-"*5)
+            print ("-"*5,"Opcion 4. Eliminar Alumno"," "*127,"-"*5)
+            print ("-"*5,"Opcion 5. Salir del programa"," "*124,"-"*5)
             print ("-"*165)
             print("")
             
@@ -230,9 +265,11 @@ def main():
                 gestion_reportes()
 
             elif r == 4:
+                eliminar_alumno()
+            
+            elif r == 5:
                 print ("Saliendo del programa...")
                 break; 
-
 
             else:
                 print("!Ingresa una opcion válida (1, 2, 3 o 4)¡");
